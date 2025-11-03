@@ -3046,7 +3046,7 @@ class RadianceObj(SuperClass):
         sensorsground : int (default None)
             Number of scan points along the scene pitch.  Default every 20cm
         sensorsgroundx : int (default 1)
-            Number of scans in the x dimension
+            Number of scans in the second (X) dimension
         sceneNum : int
             Index of the scene number in the list of scenes per trackerdict. default 0
         append : Bool (default True)
@@ -4655,7 +4655,7 @@ class AnalysisObj(SuperClass):
     def _linePtsArray(self, linePtsDict):
         """
         Helper function to just print the x y and z values in an array format,
-        just like they will show in the .csv result files.
+        just like they will show in the .csv result files.  Useful for debugging scans.
         
         """
         xstart = linePtsDict['xstart']
@@ -4683,8 +4683,21 @@ class AnalysisObj(SuperClass):
                     z . append(zstart+iy*zinc+ix*sx_zinc)
 
         return x, y, z
-        
+       
     def _linePtsMakeDict(self, linePtsDict):
+        """
+        Create a 1D linescan along the Y-chord of amodule or 2D linescan
+        along the Y- and X-chord of a module.
+        Parameters
+        ------------
+        linePtsDict : dictionary
+            Dictionary with the following keys:
+                xstart, ystart, zstart : starting coordinates of the linepts
+                xinc, yinc, zinc : increments along each axis for each Ny step. Set = 0 for no iteration.
+                sx_xinc, sx_yinc, sx_zinc : increments along each axis for each Nx step
+                Nx, Ny, Nz : number of points along each axis. Set = 1 for no iteration.
+                orient : orientation label for each point (e.g. 'front' or 'back')
+        """
         a = linePtsDict
         linepts = self._linePtsMake3D(a['xstart'],a['ystart'],a['zstart'],
                             a['xinc'], a['yinc'], a['zinc'],
@@ -4708,8 +4721,8 @@ class AnalysisObj(SuperClass):
         for iz in range(0,Nz):
             for ix in range(0,Nx):
                 for iy in range(0,Ny):
-                    ypos = ystart+iy*yinc+ix*sx_yinc
                     xpos = xstart+iy*xinc+ix*sx_xinc
+                    ypos = ystart+iy*yinc+ix*sx_yinc
                     zpos = zstart+iy*zinc+ix*sx_zinc
                     linepts = linepts + str(xpos) + ' ' + str(ypos) + \
                           ' '+str(zpos) + ' ' + orient + " \r"
@@ -4748,7 +4761,6 @@ class AnalysisObj(SuperClass):
         """
         
         if mytitle is None:
-            #mytitle = octfile[:-4]
             mytitle = f'{octfile[:-4]}_{self.name}_Row{self.rowWanted}_Module{self.modWanted}'
 
         if plotflag is None:
