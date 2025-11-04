@@ -66,6 +66,9 @@ from deprecated import deprecated
 # TODO: remove this if/else and just have the import
 try:
     import pyradiance
+    # monkey patch new version of pr.gendaylit that includes -ang input option
+    from bifacial_radiance.pyradiance_gendaylit import gendaylit as _gendaylit
+    pyradiance.gendaylit = _gendaylit
     PYRADIANCE_AVAILABLE = True
 except ImportError:
     PYRADIANCE_AVAILABLE = False
@@ -1719,7 +1722,6 @@ class RadianceObj(SuperClass):
             print("Datetime TimeIndex", metdata.datetime[timeindex])
 
 
-
         #Time conversion to correct format and offset.
         #datetime = metdata.sunrisesetdata['corrected_timestamp'][timeindex]
         #Don't need any of this any more. Already sunrise/sunset corrected and offset by appropriate interval
@@ -1744,38 +1746,31 @@ class RadianceObj(SuperClass):
                   'Re-calculated elevation: {:0.2}'.format(sunalt))
 
         # Use pyradiance.gendaylit if available, otherwise use traditional RADIANCE command string
-        # TODO: pyradiance.gendaylit(timezone=) from MetObj.metadata
-        # TODO: figure out makeGroundString
         if PYRADIANCE_AVAILABLE:
             try:
                 # Use pyradiance to generate daylit sky - note this generates the sky directly
                 # rather than as a command string in a .rad file
-                import datetime as dt
-                time_obj = metdata.datetime[timeindex]
-                
-                # Convert to datetime if needed
-                if hasattr(time_obj, 'to_pydatetime'):
-                    time_obj = time_obj.to_pydatetime()
                 
                 gendaylit_output = pyradiance.gendaylit(
-                    dt=time_obj,
-                    latitude=lat, longitude=lon, timezone=int(timeZone*15),
-                    dirnorm=dni, diffhor=dhi,
-                    grefl=ground.ReflAvg[groundindex]
+                    altitude=sunalt, azimuth=sunaz,
+                    dirnorm=dni, diffhor=dhi, 
+                    grefl=ground.ReflAvg[groundindex], solar=True
                 )
-                
                 # Convert bytes to string and create sky string
                 if isinstance(gendaylit_output, bytes):
                     gendaylit_sky = gendaylit_output.decode('latin1')
                 else:
                     gendaylit_sky = gendaylit_output
-                
+
                 skyStr = ("# start of sky definition for daylighting studies\n" + \
                     "# location name: " + str(locName) + " LAT: " + str(lat)
                     +" LON: " + str(lon) + " Elev: " + str(elev) + "\n"
                     "# Sky generated with PyRadiance gendaylit\n" + \
                     gendaylit_sky + "\n" + \
+                    "skyfunc glow sky_mat\n0\n0\n4 1 1 1 0\n" + \
+                    "\nsky_mat source sky\n0\n0\n4 0 0 1 180\n" + \
                     ground._makeGroundString(index=groundindex, cumulativesky=False))
+
                     
             except Exception as e:
                 print(f"PyRadiance gendaylit failed: {e}. Falling back to RADIANCE command string.")
@@ -3879,7 +3874,7 @@ class SceneObj(SuperClass):
         riffile = os.path.join(temp_dir.name, f'ov{pid}.rif')
         with open(riffile, 'w') as f:
                 f.write("scene= materials/ground.rad " +\
-                        f"{self.radfiles} {ltfile}\n".replace("\\",'/') +\
+                        f"{self.radfiles[0]} {ltfile}\n".replace("\\",'/') +\
                     f"EXPOSURE= .5\nUP= Z\nview= {view.replace('.vp','')} -vf views/{view}\n" +\
                     f"oconv= -f\nPICT= images/{filename}")
         # TODO: 'rad' is a high-level script not directly available in pyradiance
@@ -5781,3 +5776,4 @@ class TrackerDict(dict):
                   'which returns a list of SceneObj rather than a single SceneObj', DeprecationWarning)
              return super().__getitem__('scenes')
         return super().__getitem__(key)
+
