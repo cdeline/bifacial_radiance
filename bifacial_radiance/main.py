@@ -3824,7 +3824,7 @@ class SceneObj(SuperClass):
         # TODO: objview is an interactive viewer not available in pyradiance
         # Keep using subprocess for now
         cmd = 'objview %s %s' % (os.path.join('materials', 'ground.rad'),
-                                         self.radfiles)
+                                         self.radfiles[0])
         print('Rendering scene. This may take a moment...')
         _,err = _popen(cmd,None)
         if err is not None:
@@ -3846,6 +3846,7 @@ class SceneObj(SuperClass):
 
         """
         import tempfile
+        import re
         
         temp_dir = tempfile.TemporaryDirectory()
         pid = os.getpid()
@@ -3854,6 +3855,14 @@ class SceneObj(SuperClass):
             
         if view is None:
             view = 'side.vp'
+
+        with open(f'views/{view}','r') as f:
+            pattern = r'\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)'
+            newline = f.readline()
+            vp = re.search('-vp' + pattern, newline).groups()
+            vp = tuple(float(s) for s in vp)
+            vdir = re.search('-vd' + pattern, newline).groups()
+            vdir = tuple(float(s) for s in vdir)
 
         # fake lighting temporary .radfile.  Use 65 elevation and +/- 90 azimuth
         # use a concrete ground surface
@@ -3864,26 +3873,46 @@ class SceneObj(SuperClass):
             sunaz = -90
         ground = GroundObj('concrete', silent=True) 
         ltfile = os.path.join(temp_dir.name, f'lt{pid}.rad')
+        if PYRADIANCE_AVAILABLE:
+            gensky_out = pyradiance.gensky(altitude=65, azimuth=sunaz, sunny_with_sun=True)
+        else:
+            gensky_out = "!gensky -ang %s %s +s\n" %(65, sunaz)
         with open(ltfile, 'w') as f:
-            f.write("!gensky -ang %s %s +s\n" %(65, sunaz) + \
+            f.write(gensky_out + \
             "skyfunc glow sky_mat\n0\n0\n4 1 1 1 0\n" + \
             "\nsky_mat source sky\n0\n0\n4 0 0 1 180\n" + \
             ground._makeGroundString() )
-        
-        # make .rif and run RAD
-        riffile = os.path.join(temp_dir.name, f'ov{pid}.rif')
-        with open(riffile, 'w') as f:
-                f.write("scene= materials/ground.rad " +\
-                        f"{self.radfiles[0]} {ltfile}\n".replace("\\",'/') +\
-                    f"EXPOSURE= .5\nUP= Z\nview= {view.replace('.vp','')} -vf views/{view}\n" +\
-                    f"oconv= -f\nPICT= images/{filename}")
-        # TODO: 'rad' is a high-level script not directly available in pyradiance
-        # Keep using subprocess for now
-        _,err = _popen(["rad",'-s',riffile], None)
-        if err:
-            print(err)
+        if PYRADIANCE_AVAILABLE:
+            pr_scene = pyradiance.Scene('saveImage')
+            pr_scene.add_material("materials/ground.rad")
+            pr_scene.add_surface(self.radfiles[0])
+            pr_scene.add_source(ltfile)
+            aview = pyradiance.create_default_view()
+            aview.vp = vp
+            aview.vdir = vdir
+            pr_scene.add_view(aview)
+            image = pyradiance.render(pr_scene, ambbounce=1)
+            hdrfile = f"images/{filename}_{view.replace('.vp','')}.hdr"
+            with open(hdrfile, "wb") as wtr:
+                wtr.write(image)
+            print(f"Scene image saved: {hdrfile}")
+
         else:
-            print(f"Scene image saved: images/{filename}_{view.replace('.vp','')}.hdr")
+            # make .rif and run RAD
+            riffile = os.path.join(temp_dir.name, f'ov{pid}.rif')
+            with open(riffile, 'w') as f:
+                    f.write("scene= materials/ground.rad " +\
+                            f"{self.radfiles[0]} {ltfile}\n".replace("\\",'/') +\
+                        f"EXPOSURE= .5\nUP= Z\nview= {view.replace('.vp','')} -vf views/{view}\n" +\
+                        f"oconv= -f\nPICT= images/{filename}")
+            # TODO: 'rad' is a high-level script not directly available in pyradiance
+            # Keep using subprocess for now
+            _,err = _popen(["rad",'-s',riffile], None)
+
+            if err:
+                print(err)
+            else:
+                print(f"Scene image saved: images/{filename}_{view.replace('.vp','')}.hdr")
         
         temp_dir.cleanup()
 
