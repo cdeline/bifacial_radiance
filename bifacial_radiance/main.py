@@ -67,8 +67,12 @@ from deprecated import deprecated
 try:
     import pyradiance
     # monkey patch new version of pr.gendaylit that includes -ang input option
+    # and pextrem for falsecolor extrema scaling.
+    # patch no longer needed if pyradiance.__version__ >= 1.2.1
     from bifacial_radiance.pyradiance_gendaylit import gendaylit as _gendaylit
+    from bifacial_radiance.pyradiance_gendaylit import pextrem as _pextrem
     pyradiance.gendaylit = _gendaylit
+    pyradiance.pextrem = _pextrem
     PYRADIANCE_AVAILABLE = True
 except ImportError:
     PYRADIANCE_AVAILABLE = False
@@ -97,89 +101,6 @@ def _missingKeyWarning(dictype, missingkey, newvalue): # prints warnings
 
 def _normRGB(r, g, b): #normalize by each color for human vision sensitivity
     return r*0.216+g*0.7152+b*0.0722
-
-def pextrem(hdr_data):
-    """
-    Find extrema points in a Radiance HDR picture data.
-    Python implementation of the pextrem.c Radiance utility.
-    
-    This function parses HDR image data (in text format from rpict output)
-    and finds the minimum and maximum brightness pixels, returning their
-    coordinates and RGB values.
-    
-    Parameters
-    ----------
-    hdr_data : str or bytes
-        HDR image data in text format (output from rpict -i or similar).
-        Each line should contain: X Y Z R G B values separated by tabs.
-    
-    Returns
-    -------
-    str
-        Output string in the format:
-        "xmin ymin    Rmin Gmin Bmin\\nxmax ymax    Rmax Gmax Bmax"
-        where coordinates and RGB values represent the darkest and brightest
-        pixels in the image.
-    
-    Examples
-    --------
-    >>> hdr_output = rpict_command_output  # some HDR data
-    >>> extrema = pextrem(hdr_output)
-    >>> print(extrema)
-    """
-    # Convert bytes to string if needed
-    if isinstance(hdr_data, bytes):
-        hdr_data = hdr_data.decode('latin1')
-    
-    # Initialize extrema values
-    cmin = [float('inf'), float('inf'), float('inf')]
-    cmax = [0.0, 0.0, 0.0]
-    xmin, ymin = 0, 0
-    xmax, ymax = 0, 0
-    
-    # Parse the HDR data line by line
-    lines = hdr_data.strip().split('\n')
-    
-    for line in lines:
-        if not line.strip():
-            continue
-        
-        parts = line.split('\t')
-        if len(parts) < 6:
-            continue
-        
-        try:
-            x = int(parts[0])
-            y = int(parts[1])
-            z = float(parts[2])  # Not used but in format
-            r = float(parts[3])
-            g = float(parts[4])
-            b = float(parts[5])
-            
-            # Calculate brightness using normalized RGB (human vision sensitivity)
-            brightness = _normRGB(r, g, b)
-            brightness_max = _normRGB(cmax[0], cmax[1], cmax[2])
-            brightness_min = _normRGB(cmin[0], cmin[1], cmin[2])
-            
-            # Check for maximum
-            if brightness > brightness_max:
-                cmax = [r, g, b]
-                xmax, ymax = x, y
-            
-            # Check for minimum
-            if brightness < brightness_min:
-                cmin = [r, g, b]
-                xmin, ymin = x, y
-                
-        except (ValueError, IndexError):
-            # Skip malformed lines
-            continue
-    
-    # Format output similar to pextrem.c
-    output = f"{xmin} {ymin}\t{cmin[0]:.2e} {cmin[1]:.2e} {cmin[2]:.2e}\n"
-    output += f"{xmax} {ymax}\t{cmax[0]:.2e} {cmax[1]:.2e} {cmax[2]:.2e}"
-    
-    return output
 
 def _popen(cmd, data_in, data_out=PIPE):
     """
@@ -4688,11 +4609,10 @@ class AnalysisObj(SuperClass):
         if name is None:
             name = self.name
 
-        #TODO: update this for cross-platform compatibility w/ os.path.join
         if self.hpc :
             time_to_wait = 10
             time_counter = 0
-            filelist = [octfile, "views/"+viewfile]
+            filelist = os.path.join(octfile, "views", viewfile)
             for file in filelist:
                 while not os.path.exists(file):
                     time.sleep(1)
@@ -4730,7 +4650,7 @@ class AnalysisObj(SuperClass):
             try:
                 # Parse view file to get view parameters
                 view_params = []
-                with open(f"views/{viewfile}", 'r') as vf:
+                with open(os.path.join("views",viewfile), 'r') as vf:
                     view_content = vf.read().strip()
                     view_params = view_content.split()
                 
@@ -4756,10 +4676,28 @@ class AnalysisObj(SuperClass):
             print('Error: {}'.format(err))
             return
 
-        # Use Python implementation of pextrem instead of subprocess
-        extrm_out = pextrem(WM2_out)
-        # cast the pextrem string as a float and find the max value
-        WM2max = max(map(float,extrm_out.split()))
+        # Use pyradiance.pextrem if available, otherwise fall back to subprocess
+        if PYRADIANCE_AVAILABLE:
+            try:
+                min_pt, max_pt = pyradiance.pextrem(WM2_out)
+                # Extract RGB values from max point tuple (x, y, r, g, b)
+                # Calculate max brightness from the max RGB values
+                WM2max = max(max_pt[2], max_pt[3], max_pt[4])
+            except Exception as e:
+                print(f"Error using pyradiance.pextrem: {e}, falling back to subprocess")
+                extrm_out, err = _popen("pextrem", WM2_out.encode('latin1') if isinstance(WM2_out, str) else WM2_out)
+                if err is not None:
+                    print('Error: {}'.format(err))
+                    return
+                WM2max = max(map(float, extrm_out.split()))
+        else:
+            extrm_out, err = _popen("pextrem", WM2_out.encode('latin1') if isinstance(WM2_out, str) else WM2_out)
+            if err is not None:
+                print('Error: {}'.format(err))
+                return
+            # cast the pextrem string as a float and find the max value
+            WM2max = max(map(float, extrm_out.split()))
+        
         print('Saving scene in false color')
         # Use pyradiance.falsecolor if available, otherwise fall back to subprocess
         if PYRADIANCE_AVAILABLE:
