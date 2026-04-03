@@ -3604,7 +3604,6 @@ class GroundObj(SuperClass):
             raise err
         return groundstring
 
-        
 
 class SceneObj(SuperClass):
     """
@@ -3930,14 +3929,16 @@ class SceneObj(SuperClass):
         ground = GroundObj('concrete', silent=True) 
         ltfile = os.path.join(temp_dir.name, f'lt{pid}.rad')
         if PYRADIANCE_AVAILABLE:
-            gensky_out = pyradiance.gensky(altitude=65, azimuth=sunaz, sunny_with_sun=True)
+            gensky_out = pyradiance.gensky(altitude=65, azimuth=sunaz,
+                                           sunny_with_sun=True) + \
+                                           ground._makeGroundString().encode('latin1')
         else:
-            gensky_out = "!gensky -ang %s %s +s\n" %(65, sunaz)
-        with open(ltfile, 'w') as f:
-            f.write(gensky_out + \
+            gensky_out = ("!gensky -ang %s %s +s\n" %(65, sunaz) + \
             "skyfunc glow sky_mat\n0\n0\n4 1 1 1 0\n" + \
             "\nsky_mat source sky\n0\n0\n4 0 0 1 180\n" + \
-            ground._makeGroundString() )
+            ground._makeGroundString()).encode('latin1')
+        with open(ltfile, 'wb') as f:
+            f.write(gensky_out)
         if PYRADIANCE_AVAILABLE:
             pr_scene = pyradiance.Scene('saveImage')
             pr_scene.add_material("materials/ground.rad")
