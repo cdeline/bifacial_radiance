@@ -70,6 +70,7 @@ try:
     # monkey patch new version of pr.gendaylit that includes -ang input option
     # and pextrem for falsecolor extrema scaling.
     # patch no longer needed if pyradiance.__version__ >= 1.2.1
+    # which requires python >= 3.10
     from bifacial_radiance.pyradiance_gendaylit import gendaylit as _gendaylit
     from bifacial_radiance.pyradiance_gendaylit import pextrem as _pextrem
     pyradiance.gendaylit = _gendaylit
@@ -4667,14 +4668,14 @@ class AnalysisObj(SuperClass):
             with open(hdr_filename,"wb") as f:
                 f.write(hdr_raw)
             #hdr_out = pr.pcond(hdr_filename, human=True)
-
-
-        #TODO: update this for cross-platform compatibility w os.path.join
-        os.system("rpict -dp 256 -ar 48 -ms 1 -ds .2 -dj .9 -dt .1 "+
-                  "-dc .5 -dr 1 -ss 1 -st .1 -ab 3  -aa .1 "+
-                  "-ad 1536 -as 392 -av 25 25 25 -lr 8 -lw 1e-4 -vf views/"
-                  +viewfile+ " " + octfile +
-                  " > images/"+name+viewfile[:-3] +".hdr")
+        else:
+            #TODO: update this for cross-platform compatibility w os.path.join
+            #TODO: update this using _popen instead of os.system.
+            os.system("rpict -dp 256 -ar 48 -ms 1 -ds .2 -dj .9 -dt .1 "+
+                    "-dc .5 -dr 1 -ss 1 -st .1 -ab 3  -aa .1 "+
+                    "-ad 1536 -as 392 -av 25 25 25 -lr 8 -lw 1e-4 -vf views/"
+                    +viewfile+ " " + octfile +
+                    " > images/"+name+viewfile[:-3] +".hdr")
 
     def makeFalseColor(self, viewfile, octfile=None, name=None):
         """

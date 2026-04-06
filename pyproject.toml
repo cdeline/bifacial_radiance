@@ -31,7 +31,7 @@ dependencies = [
     "pandas",
     "pvlib >= 0.8.0",
     "pvmismatch",
-    "pyradiance >= 1.0.0",
+    "pyradiance >= 1.2.3",
     "requests",
     "scipy > 1.6.0",
     "tqdm",
