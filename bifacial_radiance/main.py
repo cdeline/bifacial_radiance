@@ -1732,7 +1732,7 @@ class RadianceObj(SuperClass):
             print('usage: make sure to run setGround() before gendaylit()')
             return
 
-        if debug is True:
+        if debug:
             print('Sky generated with Gendaylit, with DNI: %0.1f, DHI: %0.1f' % (dni, dhi))
             print("Datetime TimeIndex", metdata.datetime[timeindex])
 
@@ -1785,6 +1785,8 @@ class RadianceObj(SuperClass):
                     "skyfunc glow sky_mat\n0\n0\n4 1 1 1 0\n" + \
                     "\nsky_mat source sky\n0\n0\n4 0 0 1 180\n" + \
                     ground._makeGroundString(index=groundindex, cumulativesky=False))
+                if debug:
+                    print('Using pyRadiance gendaylit output for sky definition')
 
                     
             except Exception as e:
@@ -4647,6 +4649,26 @@ class AnalysisObj(SuperClass):
                     if time_counter > time_to_wait:break
 
         print('Generating visible render of scene')
+
+        if PYRADIANCE_AVAILABLE:
+            # Parse view file to get view parameters
+            view_params = []
+            with open(os.path.join("views",viewfile), 'r') as vf:
+                view_content = vf.read().strip()
+                view_params = view_content.split()
+
+            # Set ray parameters for high quality rendering
+            ray_params = ['-dp', '256', '-ar', '48', '-ms', '1', '-ds', '.2', 
+                        '-dj', '.9', '-dt', '.1', '-dc', '.5', '-dr', '1', '-ss', '1', 
+                        '-st', '.1', '-ab', '3', '-aa', '.1', '-ad', '1536', '-as', '392',
+                        '-av', '25', '25', '25', '-lr', '8', '-lw', '1e-4']
+            hdr_raw = pyradiance.rpict(view_params[1:], octfile, params=ray_params)
+            hdr_filename = os.path.join("images","%s%s.hdr"%(name,viewfile[:-3]) )
+            with open(hdr_filename,"wb") as f:
+                f.write(hdr_raw)
+            #hdr_out = pr.pcond(hdr_filename, human=True)
+
+
         #TODO: update this for cross-platform compatibility w os.path.join
         os.system("rpict -dp 256 -ar 48 -ms 1 -ds .2 -dj .9 -dt .1 "+
                   "-dc .5 -dr 1 -ss 1 -st .1 -ab 3  -aa .1 "+
@@ -4687,7 +4709,7 @@ class AnalysisObj(SuperClass):
                              '-st', '.1', '-ab', '3', '-aa', '.1', '-ad', '1536', '-as', '392',
                              '-av', '25', '25', '25', '-lr', '8', '-lw', '1e-4']
                 
-                WM2_out = pyradiance.rpict(view_params, octfile, params=ray_params)
+                WM2_out = pyradiance.rpict(view_params[1:], octfile, params=ray_params)
                 err = None
             except Exception as e:
                 err = f"Error: {str(e)}"
@@ -5258,7 +5280,7 @@ class AnalysisObj(SuperClass):
             rowWanted = round(rowWanted)
         self.modWanted = modWanted
         self.rowWanted = rowWanted
-        if debug is True:
+        if debug:
             print( f"Sampling: modWanted {modWanted}, rowWanted {rowWanted} "
                   "out of {nMods} modules, {nRows} rows" )
 
@@ -5419,7 +5441,7 @@ class AnalysisObj(SuperClass):
                 sx_zinc_front = 0.0
                 
                 
-        if debug is True:
+        if debug:
             print("Azimuth", azimuth)
             print("Coordinate Center Point of Desired Panel before azm rotation", x0, y0)
             print("Coordinate Center Point of Desired Panel after azm rotation", x1, y1)
