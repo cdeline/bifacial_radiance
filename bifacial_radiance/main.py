@@ -3945,7 +3945,12 @@ class SceneObj(SuperClass):
         if PYRADIANCE_AVAILABLE:
             pr_scene = pyradiance.Scene('saveImage')
             pr_scene.add_material("materials/ground.rad")
-            pr_scene.add_surface(self.radfiles[0])
+            if type(self.radfiles) == list:
+                pr_scene.add_surface(self.radfiles[0])
+            elif type(self.radfiles) == str:
+                pr_scene.add_surface(self.radfiles)
+            else:
+                raise Exception('SceneObj.radfiles set improperly')
             pr_scene.add_source(ltfile)
             aview = pyradiance.create_default_view()
             aview.vp = vp

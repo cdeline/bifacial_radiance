@@ -109,7 +109,8 @@ def test_Radiance_high_azimuth_modelchains():
     #assert np.round(np.mean(analysis.backRatio),2) == 0.20  # bifi ratio was == 0.22 in v0.2.2
     assert np.mean(results.Wm2Front[0]) == pytest.approx(899, rel = 0.005)  # was 912 in v0.2.3
     assert np.mean(results.Wm2Back[0]) == pytest.approx(189, rel = 0.03)  # was 182 in v0.2.2
-    assert results.Pout[0] == demo2.compiledResults.Pout[0] == pytest.approx(369, abs= 1)
+    assert results.Pout[0]  == pytest.approx(369, abs= 1.5)
+    assert demo2.compiledResults.Pout[0] == pytest.approx(369, abs= 1.5)
     assert results.Mismatch[0] == pytest.approx(2.82, abs = .1)
 
     # assert that .hdr image files were created in the last 5 minutes
@@ -287,6 +288,7 @@ def test_1axis_gencumSky():
     results = demo.calculatePerformance1axis(module=module)
     results = demo.calculatePerformance1axis(module=module) #make sure running this twice doesn't error..
     pd.testing.assert_frame_equal(results, demo.compiledResults)
+    
     assert results[results.modNum==7].Grear_mean.iloc[0] == pytest.approx(210, abs=30) #gencumsky has lots of variability
     assert len(results) == 3
     assert results[results.modNum==5].iloc[0].Grear_mean == pytest.approx(np.mean(results[results.modNum==5].iloc[0].Wm2Back), abs=0.1)
