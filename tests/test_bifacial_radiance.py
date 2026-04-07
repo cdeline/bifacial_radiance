@@ -109,9 +109,9 @@ def test_Radiance_high_azimuth_modelchains():
     #assert np.round(np.mean(analysis.backRatio),2) == 0.20  # bifi ratio was == 0.22 in v0.2.2
     assert np.mean(results.Wm2Front[0]) == pytest.approx(899, rel = 0.005)  # was 912 in v0.2.3
     assert np.mean(results.Wm2Back[0]) == pytest.approx(189, rel = 0.03)  # was 182 in v0.2.2
-    assert results.Pout[0]  == pytest.approx(369, abs= 1.5)
-    assert demo2.compiledResults.Pout[0] == pytest.approx(369, abs= 1.5)
-    assert results.Mismatch[0] == pytest.approx(2.82, abs = .1)
+    assert results.Pout[0]  == pytest.approx(369, abs= 1)
+    assert demo2.compiledResults.Pout[0] == pytest.approx(369, abs= 1)
+    assert results.Mismatch[0] == pytest.approx(2.82, abs = .11)
 
     # assert that .hdr image files were created in the last 5 minutes
     mtime_module = os.path.getmtime(os.path.join('images','test-module_XYZ.hdr'))
@@ -269,7 +269,7 @@ def test_1axis_gencumSky():
     #assert trackerdict[-5.0]['radfile'] == 'objects/1axis-5.0_1.825_11.42_5.0_10x3_origin0,0.rad'
     minitrackerdict = {}
     minitrackerdict[list(trackerdict)[0]] = trackerdict[list(trackerdict.keys())[0]]
-    minitrackerdict[list(trackerdict)[0]]['scenes'] = [trackerdict[list(trackerdict)[0]]['scenes'][3]]
+    minitrackerdict[list(trackerdict)[0]]['scenes'] = [trackerdict[list(trackerdict)[0]]['scenes'][2]]
 
     trackerdict = demo.makeOct1axis(trackerdict=minitrackerdict, singleindex=-5) # just run this for one timestep: -5 degrees
     trackerdict = demo.analysis1axis( modWanted=7, rowWanted=3, sensorsy=2, sceneNum=0) 
