@@ -271,13 +271,14 @@ def test_1axis_gencumSky():
     minitrackerdict[list(trackerdict)[0]]['scenes'] = [trackerdict[list(trackerdict)[0]]['scenes'][2]]
 
     trackerdict = demo.makeOct1axis(trackerdict=minitrackerdict, singleindex=-5) # just run this for one timestep: -5 degrees
-    trackerdict = demo.analysis1axis( modWanted=7, rowWanted=3, sensorsy=2, sceneNum=0) 
+
+    trackerdict = demo.analysis1axis( modWanted=7, rowWanted=3, sensorsy=2, sceneNum=0, accuracy='high') 
     assert trackerdict[-5.0]['AnalysisObj'][0].x[0] == pytest.approx(-10.766, abs=.001)
     modscanfront = {}
     modscanfront = {'xstart': -5}
-    trackerdict = demo.analysis1axis( sensorsy=2, modscanfront=modscanfront, sceneNum=0, customname='_test2') 
+    trackerdict = demo.analysis1axis( sensorsy=2, modscanfront=modscanfront, sceneNum=0, customname='_test2', accuracy='high') 
     assert trackerdict[-5.0]['AnalysisObj'][1].x[0] == -5
-    trackerdict = demo.analysis1axisground(sensorsground=10,modWanted=1, rowWanted=1)
+    trackerdict = demo.analysis1axisground(sensorsground=10,modWanted=1, rowWanted=1, accuracy='high')
     
     demo.exportTrackerDict(trackerdict, savefile = 'results/exportedTrackerDict2.csv')
     
@@ -287,7 +288,7 @@ def test_1axis_gencumSky():
     results = demo.calculatePerformance1axis(module=module)
     results = demo.calculatePerformance1axis(module=module) #make sure running this twice doesn't error..
     pd.testing.assert_frame_equal(results, demo.compiledResults)
-    assert results[results.modNum==7].Grear_mean.iloc[0] == pytest.approx(210, abs=30) #gencumsky has lots of variability
+    assert results[results.modNum==7].Grear_mean.iloc[0] == pytest.approx(190, abs=15) #gencumsky has lots of variability
     assert len(results) == 3
     assert results[results.modNum==5].iloc[0].Grear_mean == pytest.approx(np.mean(results[results.modNum==5].iloc[0].Wm2Back), abs=0.1)
     assert len(results[results.modNum==1]['Wm2Front'][0]) == 10
