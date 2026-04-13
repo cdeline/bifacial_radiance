@@ -8,7 +8,7 @@ Major release
 Bug fixes
 ~~~~~~~~~
 * Switch to accuracy='high' for some pytests to reduce variability (:pull:`594`)
-* Github pytests use an updated RADIANCE distribution - https://github.com/LBNL-ETA/Radiance/releases/tag/rad6R0P2  (:pull:`594`)
+* Github pytests use an updated `RADIANCE distribution <https://github.com/LBNL-ETA/Radiance/releases/tag/rad6R0P2>`_ (:pull:`594`)
 
 Documentation
 ~~~~~~~~~~~~~~
