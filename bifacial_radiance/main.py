@@ -1719,18 +1719,19 @@ class RadianceObj(SuperClass):
             print('Sky generated with Gendaylit, with DNI: %0.1f, DHI: %0.1f' % (dni, dhi))
             print("Datetime TimeIndex", metdata.datetime[timeindex])
 
+        # Use precomputed sun position if available, otherwise calculate from solpos
+        if hasattr(metdata, "sunaz") and hasattr(metdata, "sunalt"):
+            sunaz = float(metdata.sunaz[timeindex])
+            sunalt = float(metdata.sunalt[timeindex])        
+            print("Using precomputed sunaz/sunalt from metadata")
 
-
-        #Time conversion to correct format and offset.
-        #datetime = metdata.sunrisesetdata['corrected_timestamp'][timeindex]
-        #Don't need any of this any more. Already sunrise/sunset corrected and offset by appropriate interval
-
-        # get solar position zenith and azimuth based on site metadata
-        #solpos = pvlib.irradiance.solarposition.get_solarposition(datetimetz,lat,lon,elev)
-        solpos = metdata.solpos.iloc[timeindex]
-        sunalt = float(solpos.elevation)
-        # Radiance expects azimuth South = 0, PVlib gives South = 180. Must substract 180 to match.
-        sunaz = float(solpos.azimuth)-180.0
+        else:            
+            # get solar position zenith and azimuth based on site metadata
+            #solpos = pvlib.irradiance.solarposition.get_solarposition(datetimetz,lat,lon,elev)
+            solpos = metdata.solpos.iloc[timeindex]
+            sunalt = float(solpos.elevation)
+            # Radiance expects azimuth South = 0, PVlib gives South = 180. Must substract 180 to match.
+            sunaz = float(solpos.azimuth)-180.0
 
         sky_path = 'skies'
 
