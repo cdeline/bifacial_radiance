@@ -166,7 +166,7 @@ def runModelChain(simulationParamsDict, sceneParamsDict, timeControlParamsDict=N
     # Fixed gencumsky condition
         scene = demo.makeScene(module=module, 
                                sceneDict=sceneParamsDict, customtext=customObject)
-        demo.genCumSky(demo.gencumsky_metfile, use_mtx=use_mtx)  
+        demo.genCumSky(None if use_mtx else demo.gencumsky_metfile, use_mtx=use_mtx) 
         
         if pilesParamsDict:
             demo.addPiles(spacingPiles=pilesParamsDict['spacingPiles'], 
