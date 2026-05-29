@@ -10,7 +10,7 @@ bifacial_radiance.py - module to develop radiance bifacial scenes, including gen
 Pre-requisites:
     This software is written for Python >3.6 leveraging many Anaconda tools (e.g. pandas, numpy, etc)
 
-    *RADIANCE software should be installed from https://github.com/NatLabRockies/Radiance/releases
+    *RADIANCE software should be installed from https://github.com/LBNL-ETA/Radiance/releases
 
     *If you want to use gencumulativesky, move 'gencumulativesky.exe' from
     'bifacial_radiance/data' into your RADIANCE source directory.
