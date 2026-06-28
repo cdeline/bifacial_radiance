@@ -55,6 +55,7 @@ jobs:
       run: |
         # https://docs.github.com/en/actions/learn-github-actions/workflow-commands-for-github-actions#adding-a-system-path
         echo "/home/runner/work/bifacial_radiance/bifacial_radiance/SMARTS_295_Linux" >> $GITHUB_PATH
+        echo $PWD/bifacial_radiance/data >> $GITHUB_PATH
 
     - name: Install xvfb
       run: sudo apt-get update && sudo apt-get install -y xvfb
