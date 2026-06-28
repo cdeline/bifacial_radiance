@@ -327,6 +327,7 @@ def _subhourlydatatoGencumskyformat(gencumskydata, label='right'):
     return gencumskydata
     # end _subhourlydatatoGencumskyformat   
 
+"""   
 def _checkRaypath():
     # Ensure that os.environ['RAYPATH'] exists and contains current directory '.'
     if os.name == 'nt':
@@ -342,7 +343,7 @@ def _checkRaypath():
             os.environ['RAYPATH'] = splitter.join(filter(None, raysplit + ['.' + splitter]))
     except (KeyError, AttributeError, TypeError):
         raise Exception('No RAYPATH set for RADIANCE.  Please check your RADIANCE installation.')
-    
+""" 
 def _getradfiles(scenelist):
     """
     scenelist:   array of SceneObjs such as in RadianceObj.scenes
@@ -574,7 +575,7 @@ class RadianceObj(SuperClass):
 
         now = datetime.datetime.now()
         self.nowstr = str(now.date())+'_'+str(now.hour).zfill(2)+str(now.minute).zfill(2)+str(now.second).zfill(2)
-        _checkRaypath()       # make sure we have RADIANCE path set up correctly
+        #_checkRaypath()       # make sure we have RADIANCE path set up correctly
 
         # DEFAULTS
 
